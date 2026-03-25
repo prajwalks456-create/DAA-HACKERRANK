@@ -1,0 +1,68 @@
+import java.util.Scanner;
+import java.util.stream.IntStream;
+
+public class Solution {
+
+    // DSU Find operation with Path Compression
+    private static int find(int[] parent, int i) {
+        if (parent[i] == i)
+            return i;
+        return parent[i] = find(parent, parent[i]);
+    }
+
+    // DSU Union operation
+    private static int unite(int[] parent, int components, int i, int j) {
+        int root_i = find(parent, i);
+        int root_j = find(parent, j);
+        if (root_i != root_j) {
+            parent[root_i] = root_j;
+            return components - 1; // Decrease component count
+        }
+        return components;
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        
+        if (!sc.hasNextInt()) return;
+        int n = sc.nextInt();
+        long[] d = new long[n];
+        for (int i = 0; i < n; i++) {
+            d[i] = sc.nextLong();
+        }
+
+        int numSubsets = 1 << n;
+
+        // Using Java 8 IntStream to iterate through subsets
+        // .mapToLong allows us to sum up the long values efficiently
+        long totalSum = IntStream.range(0, numSubsets)
+                .mapToLong(subsetMask -> {
+                    int[] parent = new int[64];
+                    // Initialize DSU parents using another Java 8 stream
+                    IntStream.range(0, 64).forEach(k -> parent[k] = k);
+                    
+                    int currentComponents = 64;
+
+                    for (int j = 0; j < n; j++) {
+                        // Check if the j-th element is in the current subset
+                        if (((subsetMask >> j) & 1) == 1) {
+                            int firstBit = -1;
+                            for (int bit = 0; bit < 64; bit++) {
+                                if (((d[j] >> bit) & 1) == 1) {
+                                    if (firstBit == -1) {
+                                        firstBit = bit;
+                                    } else {
+                                        currentComponents = unite(parent, currentComponents, firstBit, bit);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return (long) currentComponents;
+                })
+                .sum(); // Terminal operation to aggregate all results
+
+        System.out.println(totalSum);
+        sc.close();
+    }
+}
